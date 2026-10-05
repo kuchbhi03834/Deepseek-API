@@ -30,9 +30,11 @@ DEBUG_REQUESTS = os.getenv("DEBUG_REQUESTS", "").lower() in ("1", "true", "yes",
 # Public model ids the server advertises and accepts, mapped to DeepSeek's `model_type` wire value.
 # Also includes common model aliases used by IDE agents like OpenCode, Cursor, and Cline.
 MODEL_MAP = {
-    "deepseek-chat":     "default",   # Instant — the fast default model
-    "deepseek-expert":   "expert",    # Expert  — the stronger, slower model
-    "deepseek-reasoner": "expert",    # Reasoning model (auto-enables thinking)
+    "deepseek-chat":     "default",   # DeepSeek-V3 (latest flagship web model)
+    "deepseek-v3":       "default",   # DeepSeek-V3
+    "deepseek-expert":   "expert",    # Expert mode
+    "deepseek-reasoner": "expert",    # DeepSeek-R1 (latest reasoning web model)
+    "deepseek-r1":       "expert",    # DeepSeek-R1 alias
     "deepseek-coder":    "expert",    # Coder alias -> expert
     "gpt-4o":            "expert",    # OpenAI alias -> expert
     "gpt-4":             "expert",    # OpenAI alias -> expert
@@ -43,21 +45,17 @@ DEFAULT_MODEL = "deepseek-chat"
 
 
 def is_known_model(name: str) -> bool:
-    """Whether `name` is a model id we accept (used to 404 unknown models)."""
+    """Whether `name` is an accepted model id or alias."""
     return name in MODEL_MAP
 
 
 def resolve_model_type(name: str) -> str:
-    """Translate a public model id to DeepSeek's `model_type` wire value.
+    """Translate a public model id to DeepSeek's `model_type` wire value."""
+    return MODEL_MAP.get(name, "default")
 
-    Caller must check `is_known_model` first; this raises KeyError otherwise.
-    """
-    return MODEL_MAP[name]
 
 
 def should_enable_thinking(model: str, requested_thinking: bool = False) -> bool:
-    """Determine if thinking (reasoning) should be enabled for this request.
+    """Determine if thinking (reasoning) should be enabled for this request."""
+    return requested_thinking or any(k in model.lower() for k in ("reason", "r1", "think"))
 
-    Automatically enabled for `deepseek-reasoner` or when explicitly toggled.
-    """
-    return requested_thinking or model == "deepseek-reasoner"
